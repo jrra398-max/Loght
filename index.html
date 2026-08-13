@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LightFrame AI — Video Editor</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#070910;color:#f5f7ff;font-family:system-ui,Tahoma,sans-serif}
+.wrap{max-width:950px;margin:auto;padding:24px 16px 50px}.hero{padding:28px 0}.tag{color:#aeb8ff;border:1px solid #343a60;padding:7px 12px;border-radius:999px;font-size:12px}
+h1{font-size:clamp(32px,7vw,58px);margin:18px 0 8px}p{color:#aeb4c8;line-height:1.8}
+.card{background:#111421;border:1px solid #272c42;border-radius:22px;padding:20px;margin-top:16px}
+input[type=file],textarea,select,input[type=number]{width:100%;background:#080a11;color:#f4f5fb;border:1px solid #30364e;border-radius:13px;padding:12px;font:inherit}
+textarea{min-height:210px;resize:vertical;line-height:1.7}
+label{display:block;font-weight:700;margin:14px 0 8px}.drop{border:1px dashed #454c68;border-radius:16px;padding:20px;text-align:center}
+button{width:100%;margin-top:16px;border:0;border-radius:14px;padding:14px;font:inherit;font-weight:800;cursor:pointer;background:#e9ecff;color:#080910}
+button:disabled{opacity:.5;cursor:not-allowed}.status{margin-top:14px;color:#aab3cf}.result{margin-top:18px;display:none}.result video{width:100%;border-radius:16px;background:#000}.result a{display:block;text-align:center;margin-top:10px;color:#dbe0ff}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:650px){.grid{grid-template-columns:1fr}}
+.note{font-size:13px;color:#858da7}
+</style>
+</head>
+<body><div class="wrap">
+<div class="hero"><span class="tag">AI VIDEO EDITOR</span><h1>LightFrame AI</h1><p>ارفع الفيديو، اكتب التعديل المطلوب، وسيتم إرساله إلى نموذج AI لمعالجة الفيديو وإرجاع النتيجة.</p></div>
+<div class="card">
+<label>الفيديو الأصلي</label><div class="drop"><input id="video" type="file" accept="video/*"><p class="note">يفضل فيديو قصير للتجربة.</p></div>
+<label>البرومبت</label>
+<textarea id="prompt">Turn the girl into a solid body of pure white light. Her entire body must be completely filled with overexposed white light, hiding all skin, clothes, and textures. No outlines, no line art, no visible details—only a seamless glowing white human form. Keep the boy and everything else completely unchanged. The light must fill her entire body, not surround it.</textarea>
+<div class="grid">
+<div><label>طريقة الحفاظ على الحركة</label><select id="condition"><option value="depth">Depth</option><option value="flow">Flow</option><option value="canny">Canny</option></select></div>
+<div><label>المدة بالثواني</label><input id="length" type="number" min="1" max="15" value="15"></div>
+</div>
+<button id="go">ابدأ تعديل الفيديو بالـ AI</button>
+<div id="status" class="status"></div>
+<div id="result" class="result"><video id="out" controls></video><a id="open" target="_blank" rel="noopener">فتح الفيديو الناتج</a></div>
+</div>
+<div class="card"><p class="note">مهم: تحتاج إلى Replicate API Token. لا تضع التوكن داخل ملفات الواجهة أو تنشره على GitHub؛ ضعه في ملف .env على السيرفر. تكلفة وتشغيل النموذج تعتمد على الخدمة والنموذج المستخدم.</p></div>
+</div>
+<script>
+const go=document.getElementById("go"), statusEl=document.getElementById("status");
+go.onclick=async()=>{
+ const file=document.getElementById("video").files[0];
+ if(!file){statusEl.textContent="ارفع فيديو أولاً.";return}
+ go.disabled=true; statusEl.textContent="جاري رفع الفيديو وتشغيل المعالجة…";
+ const fd=new FormData();
+ fd.append("video",file); fd.append("prompt",document.getElementById("prompt").value);
+ fd.append("condition",document.getElementById("condition").value);
+ fd.append("video_length",document.getElementById("length").value);
+ try{
+  const r=await fetch("/api/edit",{method:"POST",body:fd});
+  const data=await r.json();
+  if(!r.ok) throw new Error(data.error||"حدث خطأ");
+  document.getElementById("out").src=data.url;
+  document.getElementById("open").href=data.url;
+  document.getElementById("result").style.display="block";
+  statusEl.textContent="تم إنشاء النتيجة.";
+ }catch(e){statusEl.textContent="خطأ: "+e.message}
+ finally{go.disabled=false}
+};
+</script>
+</body></html>
