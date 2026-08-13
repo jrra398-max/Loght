@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LightFrame AI</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#070910;color:#f5f7ff;font-family:system-ui,Tahoma,sans-serif}
+.wrap{max-width:950px;margin:auto;padding:24px 16px 50px}.hero{padding:28px 0}.tag{color:#aeb8ff;border:1px solid #343a60;padding:7px 12px;border-radius:999px;font-size:12px}
+h1{font-size:clamp(32px,7vw,58px);margin:18px 0 8px}p{color:#aeb4c8;line-height:1.8}
+.card{background:#111421;border:1px solid #272c42;border-radius:22px;padding:20px;margin-top:16px}
+label{display:block;font-weight:700;margin:14px 0 8px}input[type=file],textarea,select{width:100%;background:#080a11;color:#f4f5fb;border:1px solid #30364e;border-radius:13px;padding:12px;font:inherit}
+textarea{min-height:220px;resize:vertical;line-height:1.7}.drop{border:1px dashed #454c68;border-radius:16px;padding:20px;text-align:center}
+button{width:100%;margin-top:16px;border:0;border-radius:14px;padding:14px;font:inherit;font-weight:800;cursor:pointer;background:#e9ecff;color:#080910}
+button:disabled{opacity:.5;cursor:not-allowed}.status{margin-top:14px;color:#aab3cf}.result{margin-top:18px;display:none}.result video{width:100%;border-radius:16px;background:#000}.result a{display:block;text-align:center;margin-top:10px;color:#dbe0ff}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:650px){.grid{grid-template-columns:1fr}}
+.note{font-size:13px;color:#858da7}
+</style>
+</head>
+<body><div class="wrap">
+<div class="hero"><span class="tag">AI VIDEO EDITOR</span><h1>LightFrame AI</h1>
+<p>ارفع فيديو قصير، اكتب التعديل المطلوب، وسيتم تعديل الفيديو مع الحفاظ قدر الإمكان على الحركة وبنية المشهد.</p></div>
+<div class="card">
+<label>الفيديو الأصلي</label><div class="drop"><input id="video" type="file" accept="video/mp4,video/quicktime,video/webm"><p class="note">يدعم MP4 / MOV / WebM. استخدم فيديو من 2 إلى 10 ثوانٍ.</p></div>
+<label>البرومبت</label>
+<textarea id="prompt">Turn the girl into a solid body of pure white light. Her entire body must be completely filled with overexposed white light, hiding all skin, clothes, and textures. No outlines, no line art, no visible details—only a seamless glowing white human form. Keep the boy and everything else completely unchanged. The light must fill her entire body, not surround it.</textarea>
+<div class="grid">
+<div><label>الدقة</label><select id="resolution"><option value="1080p">1080p</option><option value="720p">720p</option></select></div>
+<div><label>الصوت</label><select id="audio"><option value="origin">الحفاظ على الصوت الأصلي</option><option value="auto">تلقائي</option></select></div>
+</div>
+<button id="go">ابدأ تعديل الفيديو بالـ AI</button><div id="status" class="status"></div>
+<div id="result" class="result"><video id="out" controls></video><a id="open" target="_blank" rel="noopener">فتح الفيديو الناتج</a></div>
+</div>
+<div class="card"><p class="note">النموذج المستخدم هو Wan 2.7 VideoEdit عبر Replicate. جودة النتيجة تعتمد على الفيديو والبرومبت، وقد لا يثبت التفاصيل بدقة في كل فريم.</p></div>
+</div>
+<script>
+const go=document.getElementById("go");
+go.onclick=async()=>{
+ const file=document.getElementById("video").files[0],status=document.getElementById("status");
+ if(!file){status.textContent="ارفع فيديو أولاً.";return}
+ if(file.size>100*1024*1024){status.textContent="الفيديو أكبر من 100MB. استخدم ملفًا أصغر.";return}
+ go.disabled=true;status.textContent="جاري رفع الفيديو وبدء المعالجة…";
+ const fd=new FormData();fd.append("video",file);fd.append("prompt",document.getElementById("prompt").value);
+ fd.append("resolution",document.getElementById("resolution").value);fd.append("audio_setting",document.getElementById("audio").value);
+ try{const r=await fetch("/api/edit",{method:"POST",body:fd});const data=await r.json();if(!r.ok)throw new Error(data.error||"حدث خطأ");
+ document.getElementById("out").src=data.url;document.getElementById("open").href=data.url;document.getElementById("result").style.display="block";status.textContent="تم إنشاء الفيديو."
+ }catch(e){status.textContent="خطأ: "+e.message}finally{go.disabled=false}
+};
+</script></body></html>
